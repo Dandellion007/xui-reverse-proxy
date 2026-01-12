@@ -588,7 +588,7 @@ check_dependencies() {
 ###################################
 check_root() {
   if [[ $EUID -ne 0 ]]; then
-    error " $(text 8) "
+    error " $(text 2) "
   fi
 }
 
@@ -2620,11 +2620,11 @@ main() {
   # log_entry
   read_defaults_from_file
   parse_args "$@" || show_help
+  select_language
   [[ ${args[skip-check]} == "false" ]] && check_root
   [[ ${args[skip-check]} == "false" ]] && check_ip
   check_operating_system
   echo
-  select_language
   while true; do
     clear
     banner_xray
