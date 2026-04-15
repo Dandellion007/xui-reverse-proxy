@@ -321,6 +321,7 @@ update_reverse_proxy() {
   CURRENT_VERSION=$(wget -qO- $SCRIPT_URL | grep -E "^\s*VERSION_MANAGER=" | cut -d'=' -f2)
   warning "Script version: $CURRENT_VERSION"
   UPDATE_SCRIPT="${DIR_REVERSE_PROXY}reverse_proxy"
+  mkdir -p ${DIR_REVERSE_PROXY}
   wget -O $UPDATE_SCRIPT $SCRIPT_URL
   ln -sf $UPDATE_SCRIPT /usr/local/bin/reverse_proxy
   chmod +x "$UPDATE_SCRIPT"
@@ -510,6 +511,7 @@ select_language() {
       2) L=R ;;   # Русский
       *) L=E ;;   # По умолчанию — английский
     esac
+    mkdir -p ${DIR_REVERSE_PROXY}
     cat > "$LANG_FILE" << EOF
 $L
 EOF
@@ -1111,6 +1113,7 @@ swapfile() {
   swapon -a
   swapon --show
 
+  mkdir -p ${DIR_REVERSE_PROXY}
   cat > ${DIR_REVERSE_PROXY}restart_warp.sh <<EOF
 #!/bin/bash
 # Получаем количество занятого пространства в swap (в мегабайтах)
