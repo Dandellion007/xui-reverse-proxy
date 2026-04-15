@@ -1320,6 +1320,7 @@ EOF
 ###################################
 stream_conf() {
   cat > /etc/nginx/stream-enabled/stream.conf <<EOF
+map_hash_bucket_size 128;
 map \$ssl_preread_server_name \$backend {
   ${DOMAIN}                            web;
   ${SUB_DOMAIN}                        xtls;
