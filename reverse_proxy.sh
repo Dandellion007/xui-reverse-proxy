@@ -1755,7 +1755,7 @@ settings_xtls() {
     {
     "certificateFile": "/etc/letsencrypt/live/${DOMAIN}/fullchain.pem",
     "keyFile": "/etc/letsencrypt/live/${DOMAIN}/privkey.pem",
-    "ocspStapling": 3600,
+    "ocspStapling": 0,
     "oneTimeLoading": false,
     "usage": "encipherment",
     "buildChain": false
