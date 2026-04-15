@@ -51,6 +51,18 @@ reading()    { read -rp " $(question "$1")" "$2"; }
 text()       { eval echo "\${${L}[$*]}"; }
 text_eval()  { eval echo "\$(eval echo "\${${L}[$*]}")"; }
 
+array_contains() {
+  local needle="$1"
+  shift
+  local item
+
+  for item in "$@"; do
+    [[ "$item" == "$needle" ]] && return 0
+  done
+
+  return 1
+}
+
 ###################################
 ### Languages
 ###################################
@@ -368,6 +380,7 @@ read_defaults_from_file() {
 ### Writing values ​​to a file
 ###################################
 write_defaults_to_file() {
+  mkdir -p ${DIR_REVERSE_PROXY}
   cat > ${DEFAULT_FLAGS}<<EOF
 defaults[utils]=false
 defaults[dns]=false
@@ -440,9 +453,7 @@ declare -A arg_map=(
 
 parse_args() {
   local opts
-  opts=$(getopt -o hu:d:a:r:b:i:w:c:n:p:f:s:t:g:x:o --long utils:,dns:,addu:,autoupd:,bbr:,ipv6:,warp:,cert:,nginx:,panel:,firewall:,ssh:,tgbot:,generate:,skip-check:,subdomain:,update,depers,help -- "$@")
-
-  if [[ $? -ne 0 ]]; then
+  if ! opts=$(getopt -o hu:d:a:r:b:i:w:c:n:p:f:s:t:g:x:o --long utils:,dns:,addu:,autoupd:,bbr:,ipv6:,warp:,cert:,nginx:,panel:,firewall:,ssh:,tgbot:,generate:,skip-check:,subdomain:,update,depers,help -- "$@"); then
     return 1
   fi
 
@@ -552,7 +563,12 @@ check_operating_system() {
 
   # Проверка на кастомизированные системы от различных производителей
   if [ -z "$SYSTEM" ]; then
-    [ -x "$(type -p yum)" ] && int=2 && SYSTEM='CentOS' || error " $(text 5) "
+    if [ -x "$(type -p yum)" ]; then
+      int=2
+      SYSTEM='CentOS'
+    else
+      error " $(text 5) "
+    fi
   fi
 
   # Определение основной версии Linux
@@ -573,13 +589,15 @@ check_dependencies() {
   DEPS_INSTALL=("iputils-ping" "wget" "curl" "systemctl" "iproute2" "sudo")
 
   for g in "${!DEPS_CHECK[@]}"; do
-    [ ! -x "$(type -p ${DEPS_CHECK[g]})" ] && [[ ! "${DEPS[@]}" =~ "${DEPS_INSTALL[g]}" ]] && DEPS+=(${DEPS_INSTALL[g]})
+    if [ ! -x "$(type -p "${DEPS_CHECK[g]}")" ] && ! array_contains "${DEPS_INSTALL[g]}" "${DEPS[@]}"; then
+      DEPS+=("${DEPS_INSTALL[g]}")
+    fi
   done
 
   if [ "${#DEPS[@]}" -ge 1 ]; then
-    info "\n $(text 72) ${DEPS[@]} \n"
+    info "\n $(text 72) ${DEPS[*]} \n"
     ${PACKAGE_UPDATE[int]}
-    ${PACKAGE_INSTALL[int]} ${DEPS[@]}
+    ${PACKAGE_INSTALL[int]} "${DEPS[@]}"
   else
     info "\n $(text 73) \n"
   fi
@@ -940,13 +958,15 @@ installation_of_utilities() {
       DEPS_PACK_INSTALL=("jq" "ufw" "zip" "wget" "gnupg2" "nano" "cron" "sqlite3" "certbot" "vnstat" "openssl" "net-tools" "apache2-utils" "ca-certificates" "software-properties-common" "unattended-upgrades" "python3-certbot-dns-cloudflare")
 
       for g in "${!DEPS_PACK_CHECK[@]}"; do
-        [ ! -x "$(type -p ${DEPS_PACK_CHECK[g]})" ] && [[ ! "${DEPS_PACK[@]}" =~ "${DEPS_PACK_INSTALL[g]}" ]] && DEPS_PACK+=(${DEPS_PACK_INSTALL[g]})
+        if [ ! -x "$(type -p "${DEPS_PACK_CHECK[g]}")" ] && ! array_contains "${DEPS_PACK_INSTALL[g]}" "${DEPS_PACK[@]}"; then
+          DEPS_PACK+=("${DEPS_PACK_INSTALL[g]}")
+        fi
       done
 
       if [ "${#DEPS_PACK[@]}" -ge 1 ]; then
-        info " $(text 77) ": ${DEPS_PACK[@]}
+        info " $(text 77) : ${DEPS_PACK[*]}"
         ${PACKAGE_UPDATE[int]}
-        ${PACKAGE_INSTALL[int]} ${DEPS_PACK[@]}
+        ${PACKAGE_INSTALL[int]} "${DEPS_PACK[@]}"
       else
         info " $(text 78) "
       fi
@@ -957,13 +977,15 @@ installation_of_utilities() {
       DEPS_PACK_INSTALL=("jq" "zip" "tar" "wget" "gnupg2" "nano" "cronie" "sqlite" "openssl" "net-tools" "bind-utils" "httpd-tools" "certbot" "ca-certificates" "python3-certbot-dns-cloudflare")
 
       for g in "${!DEPS_PACK_CHECK[@]}"; do
-        [ ! -x "$(type -p ${DEPS_PACK_CHECK[g]})" ] && [[ ! "${DEPS_PACK[@]}" =~ "${DEPS_PACK_INSTALL[g]}" ]] && DEPS_PACK+=(${DEPS_PACK_INSTALL[g]})
+        if [ ! -x "$(type -p "${DEPS_PACK_CHECK[g]}")" ] && ! array_contains "${DEPS_PACK_INSTALL[g]}" "${DEPS_PACK[@]}"; then
+          DEPS_PACK+=("${DEPS_PACK_INSTALL[g]}")
+        fi
       done
 
       if [ "${#DEPS_PACK[@]}" -ge 1 ]; then
-        info " $(text 77) ": ${DEPS_PACK[@]}
+        info " $(text 77) : ${DEPS_PACK[*]}"
         ${PACKAGE_UPDATE[int]}
-        ${PACKAGE_INSTALL[int]} ${DEPS_PACK[@]}
+        ${PACKAGE_INSTALL[int]} "${DEPS_PACK[@]}"
       else
         info " $(text 78) "
       fi
@@ -1193,8 +1215,7 @@ EOF
   attempt=0
   max_attempts=2
   while [ $attempt -lt $max_attempts ]; do
-    certbot certonly --dns-cloudflare --dns-cloudflare-credentials ${CF_CREDENTIALS_PATH} --dns-cloudflare-propagation-seconds 30 --rsa-key-size 4096 -d ${DOMAIN},*.${DOMAIN} --agree-tos -m ${EMAIL} --cert-name ${DOMAIN} --no-eff-email --non-interactive
-    if [ $? -eq 0 ]; then
+    if certbot certonly --dns-cloudflare --dns-cloudflare-credentials "${CF_CREDENTIALS_PATH}" --dns-cloudflare-propagation-seconds 30 --rsa-key-size 4096 -d "${DOMAIN},*.${DOMAIN}" --agree-tos -m "${EMAIL}" --cert-name "${DOMAIN}" --no-eff-email --non-interactive; then
       break
     else
       attempt=$((attempt + 1))
@@ -1202,7 +1223,7 @@ EOF
     fi
   done
 
-  echo "renew_hook = systemctl reload nginx" >> /etc/letsencrypt/renewal/${DOMAIN}.conf
+  echo "renew_hook = systemctl reload nginx" >> "/etc/letsencrypt/renewal/${DOMAIN}.conf"
   add_cron_rule "0 5 1 */2 * certbot -q renew"
   tilda "$(text 10)"
 }
@@ -1214,7 +1235,7 @@ random_site() {
   info " $(text 79) "
   mkdir -p /var/www/html/ ${DIR_REVERSE_PROXY}
 
-  cd ${DIR_REVERSE_PROXY}
+  cd "${DIR_REVERSE_PROXY}" || return 1
 
   if [[ ! -d "simple-web-templates-main" ]]; then
       while ! wget -q --progress=dot:mega --timeout=30 --tries=10 --retry-connrefused "https://github.com/cortez24rus/simple-web-templates/archive/refs/heads/main.zip"; do
@@ -1240,7 +1261,7 @@ random_site() {
       echo "Ошибка при извлечении шаблона!"
   fi
 
-  cd ~
+  cd ~ || return 1
   tilda "$(text 10)"
 }
 
@@ -1680,7 +1701,7 @@ EOF
 ### Settings reality (Steal Oneself)
 ###################################
 settings_steal() {
-  read PRIVATE_KEY0 PUBLIC_KEY0 <<< "$(generate_keys)"
+  read -r PRIVATE_KEY0 PUBLIC_KEY0 <<< "$(generate_keys)"
   STREAM_SETTINGS_STEAL=$(cat <<EOF
 {
   "network": "tcp",
@@ -2165,7 +2186,7 @@ rotation_and_archiving() {
 ###################################
 enabling_security() {
   info " $(text 47) "
-  BLOCK_ZONE_IP=$(echo ${IP4} | cut -d '.' -f 1-3).0/22
+  BLOCK_ZONE_IP=$(echo "${IP4}" | cut -d '.' -f 1-3).0/22
 
   case "$SYSTEM" in
     Debian|Ubuntu)
@@ -2369,12 +2390,11 @@ renew_cert() {
   NGINX_DOMAIN=${NGINX_DOMAIN%"/"*}
 
   # Проверка наличия сертификатов
-  if [ ! -d /etc/letsencrypt/live/${NGINX_DOMAIN} ]; then
+  if [ ! -d "/etc/letsencrypt/live/${NGINX_DOMAIN}" ]; then
     check_cf_token
     issuance_of_certificates
   else
-    certbot renew --force-renewal
-    if [ $? -ne 0 ]; then
+    if ! certbot renew --force-renewal; then
       return 1
     fi
   fi
@@ -2396,11 +2416,11 @@ depersonalization_db() {
 ### Directory size
 ###################################
 directory_size() {
-  read -e -p "Enter a directory: " DIRECTORY
+  read -r -e -p "Enter a directory: " DIRECTORY
   echo
   free -h
   echo
-  du -ah ${DIRECTORY} --max-depth=1 | grep -v '/$' | sort -rh | head -10
+  du -ah "${DIRECTORY}" --max-depth=1 | grep -v '/$' | sort -rh | head -10
   echo
 }
 
