@@ -1295,8 +1295,6 @@ http {
   ssl_prefer_server_ciphers            on;
   ssl_protocols                        TLSv1.2 TLSv1.3;
   ssl_ciphers                          TLS13_AES_128_GCM_SHA256:TLS13_AES_256_GCM_SHA384:TLS13_CHACHA20_POLY1305_SHA256:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305;
-  ssl_stapling                         on;
-  ssl_stapling_verify                  on;
   resolver                             127.0.0.1 valid=60s;
   resolver_timeout                     2s;
   gzip                                 on;
