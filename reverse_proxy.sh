@@ -2261,6 +2261,7 @@ EOF
     bash <(curl -Ls https://raw.githubusercontent.com/cortez24rus/motd/refs/heads/main/install.sh)
     ubuntu_major_version=$(get_ubuntu_major_version)
     if [ -n "${ubuntu_major_version}" ] && [ "${ubuntu_major_version}" -ge 24 ]; then
+      systemctl daemon-reload
       systemctl restart ssh.socket
     else
       systemctl restart ssh
