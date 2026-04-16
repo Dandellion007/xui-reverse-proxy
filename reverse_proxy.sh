@@ -561,6 +561,19 @@ check_operating_system() {
   [[ "$MAJOR_VERSION" -lt "${MAJOR[int]}" ]] && error " $(text 71) "
 }
 
+get_ubuntu_major_version() {
+  local os_id version_id
+
+  if [ -r /etc/os-release ]; then
+    os_id=$(sed -n 's/^ID=//p' /etc/os-release | tr -d '"')
+    version_id=$(sed -n 's/^VERSION_ID=//p' /etc/os-release | tr -d '"')
+
+    if [ "${os_id}" = "ubuntu" ] && [[ "${version_id}" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+      printf '%s\n' "${version_id%%.*}"
+    fi
+  fi
+}
+
 ###################################
 ### Checking and installing dependencies
 ###################################
@@ -2190,6 +2203,8 @@ enabling_security() {
 ###################################
 ssh_setup() {
   if [[ "${ANSWER_SSH,,}" == "y" ]]; then
+    local ubuntu_major_version
+
     info " $(text 48) "
 
     # Создаем директорию для конфигураций, если ее нет
@@ -2244,7 +2259,13 @@ KerberosAuthentication no
 EOF
 
     bash <(curl -Ls https://raw.githubusercontent.com/cortez24rus/motd/refs/heads/main/install.sh)
-    systemctl restart sshd
+    ubuntu_major_version=$(get_ubuntu_major_version)
+    if [ -n "${ubuntu_major_version}" ] && [ "${ubuntu_major_version}" -ge 24 ]; then
+      systemctl daemon-reload
+      systemctl restart ssh.socket
+    else
+      systemctl restart ssh
+    fi
     tilda "$(text 10)"
   fi
 }
