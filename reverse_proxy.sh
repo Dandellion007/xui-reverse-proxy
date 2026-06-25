@@ -330,11 +330,11 @@ show_help() {
 update_reverse_proxy() {
   info "Script update and integration."
 
-  CURRENT_VERSION=$(wget -qO- $SCRIPT_URL | grep -E "^\s*VERSION_MANAGER=" | cut -d'=' -f2)
+  CURRENT_VERSION=$(wget -4 -qO- $SCRIPT_URL | grep -E "^\s*VERSION_MANAGER=" | cut -d'=' -f2)
   warning "Script version: $CURRENT_VERSION"
   UPDATE_SCRIPT="${DIR_REVERSE_PROXY}reverse_proxy"
   mkdir -p ${DIR_REVERSE_PROXY}
-  wget -O $UPDATE_SCRIPT $SCRIPT_URL
+  wget -4 -O $UPDATE_SCRIPT $SCRIPT_URL
   ln -sf $UPDATE_SCRIPT /usr/local/bin/reverse_proxy
   chmod +x "$UPDATE_SCRIPT"
 
@@ -633,7 +633,7 @@ check_ip() {
   IP4=$(ip route get 8.8.8.8 2>/dev/null | grep -Po -- 'src \K\S*')
 
   if [[ ! $IP4 =~ $IP4_REGEX ]]; then
-      IP4=$(curl -s --max-time 5 ipinfo.io/ip 2>/dev/null)
+      IP4=$(curl -4 -s --max-time 5 ipinfo.io/ip 2>/dev/null)
   fi
 
   if [[ ! $IP4 =~ $IP4_REGEX ]]; then
@@ -681,9 +681,9 @@ get_test_response() {
   testdomain=$(echo "${DOMAIN}" | rev | cut -d '.' -f 1-2 | rev)
 
   if [[ "$CFTOKEN" =~ [A-Z] ]]; then
-    test_response=$(curl --silent --request GET --url https://api.cloudflare.com/client/v4/zones --header "Authorization: Bearer ${CFTOKEN}" --header "Content-Type: application/json")
+    test_response=$(curl -4 --silent --request GET --url https://api.cloudflare.com/client/v4/zones --header "Authorization: Bearer ${CFTOKEN}" --header "Content-Type: application/json")
   else
-    test_response=$(curl --silent --request GET --url https://api.cloudflare.com/client/v4/zones --header "X-Auth-Key: ${CFTOKEN}" --header "X-Auth-Email: ${EMAIL}" --header "Content-Type: application/json")
+    test_response=$(curl -4 --silent --request GET --url https://api.cloudflare.com/client/v4/zones --header "X-Auth-Key: ${CFTOKEN}" --header "X-Auth-Email: ${EMAIL}" --header "Content-Type: application/json")
   fi
 }
 
@@ -908,7 +908,7 @@ nginx_gpg() {
   case "$SYSTEM" in
     Debian)
       ${PACKAGE_INSTALL[int]} debian-archive-keyring
-      curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor \
+      curl -4 https://nginx.org/keys/nginx_signing.key | gpg --dearmor \
         | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null
       gpg --dry-run --quiet --no-keyring --import --import-options import-show /usr/share/keyrings/nginx-archive-keyring.gpg
       echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] \
@@ -920,7 +920,7 @@ nginx_gpg() {
 
     Ubuntu)
       ${PACKAGE_INSTALL[int]} ubuntu-keyring
-      curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor \
+      curl -4 https://nginx.org/keys/nginx_signing.key | gpg --dearmor \
         | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null
       gpg --dry-run --quiet --no-keyring --import --import-options import-show /usr/share/keyrings/nginx-archive-keyring.gpg
       echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] \
@@ -1175,12 +1175,12 @@ warp() {
 
   case "$SYSTEM" in
     Debian|Ubuntu)
-      curl -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
+      curl -4 -fsSL https://pkg.cloudflareclient.com/pubkey.gpg | gpg --yes --dearmor --output /usr/share/keyrings/cloudflare-warp-archive-keyring.gpg
       echo "deb [signed-by=/usr/share/keyrings/cloudflare-warp-archive-keyring.gpg] https://pkg.cloudflareclient.com/ $(grep "VERSION_CODENAME=" /etc/os-release | cut -d "=" -f 2) main" | tee /etc/apt/sources.list.d/cloudflare-client.list
       ;;
 
     CentOS|Fedora)
-      curl -fsSl https://pkg.cloudflareclient.com/cloudflare-warp-ascii.repo | tee /etc/yum.repos.d/cloudflare-warp.repo
+      curl -4 -fsSl https://pkg.cloudflareclient.com/cloudflare-warp-ascii.repo | tee /etc/yum.repos.d/cloudflare-warp.repo
       ;;
   esac
 
@@ -1194,7 +1194,7 @@ warp() {
   warp-cli debug qlog disable
 
   warp-cli tunnel stats
-  if curl -x socks5h://localhost:40000 https://2ip.io; then
+  if curl -4 -x socks5h://localhost:40000 https://2ip.io; then
     echo "WARP is connected successfully."
   else
     warning " $(text 20) "
@@ -1251,7 +1251,7 @@ random_site() {
   cd "${DIR_REVERSE_PROXY}" || return 1
 
   if [[ ! -d "simple-web-templates-main" ]]; then
-      while ! wget -q --progress=dot:mega --timeout=30 --tries=10 --retry-connrefused "https://github.com/cortez24rus/simple-web-templates/archive/refs/heads/main.zip"; do
+      while ! wget -4 -q --progress=dot:mega --timeout=30 --tries=10 --retry-connrefused "https://github.com/cortez24rus/simple-web-templates/archive/refs/heads/main.zip"; do
         warning " $(text 38) "
         sleep 3
       done
@@ -2104,14 +2104,14 @@ install_panel() {
   SUB_URI=https://${DOMAIN}/${SUB_PATH}/
   SUB_JSON_URI=https://${DOMAIN}/${SUB_JSON_PATH}/
 
-  echo -e "n" | bash <(curl -sS "https://raw.githubusercontent.com/mhsanaei/3x-ui/$VERSION/install.sh") $VERSION >/dev/null 2>&1
+  echo -e "n" | bash <(curl -4 -sS "https://raw.githubusercontent.com/mhsanaei/3x-ui/$VERSION/install.sh") $VERSION >/dev/null 2>&1
   if ! systemctl is-active fail2ban.service; then
     echo -e "20\n1" | x-ui
   fi
   x-ui stop
 
   mv -f "$DEST_DB" "$DEST_DB.backup"
-  while ! wget -q --progress=dot:mega --timeout=30 --tries=10 --retry-connrefused -O "$DEST_DB" "$DB_SCRIPT_URL"; do
+  while ! wget -4 -q --progress=dot:mega --timeout=30 --tries=10 --retry-connrefused -O "$DEST_DB" "$DB_SCRIPT_URL"; do
     warning " $(text 38) "
     sleep 3
   done
@@ -2281,7 +2281,7 @@ ChallengeResponseAuthentication no
 KerberosAuthentication no
 EOF
 
-    bash <(curl -Ls https://raw.githubusercontent.com/cortez24rus/motd/refs/heads/main/install.sh)
+    bash <(curl -4 -Ls https://raw.githubusercontent.com/cortez24rus/motd/refs/heads/main/install.sh)
     ubuntu_major_version=$(get_ubuntu_major_version)
     if [ -n "${ubuntu_major_version}" ] && [ "${ubuntu_major_version}" -ge 24 ]; then
       systemctl daemon-reload
@@ -2319,10 +2319,10 @@ data_output() {
 download_website() {
   reading " $(text 13) " sitelink
   local NGINX_CONFIG_L="/etc/nginx/conf.d/local.conf"
-  wget -P /var/www --mirror --convert-links --adjust-extension --page-requisites --no-parent https://${sitelink}
+  wget -4 -P /var/www --mirror --convert-links --adjust-extension --page-requisites --no-parent https://${sitelink}
 
   mkdir -p ./testdir
-  wget -q -P ./testdir https://${sitelink}
+  wget -4 -q -P ./testdir https://${sitelink}
   index=$(ls ./testdir)
   rm -rf ./testdir
 
