@@ -2105,9 +2105,9 @@ install_panel() {
   SUB_JSON_URI=https://${DOMAIN}/${SUB_JSON_PATH}/
 
   echo -e "n" | bash <(curl -4 -sS "https://raw.githubusercontent.com/mhsanaei/3x-ui/$VERSION/install.sh") $VERSION >/dev/null 2>&1
-  if ! systemctl is-active fail2ban.service; then
-    echo -e "20\n1" | x-ui
-  fi
+  # if ! systemctl is-active fail2ban.service; then
+  #   echo -e "20\n1\n${DOMAIN}" | x-ui
+  # fi
   x-ui stop
 
   mv -f "$DEST_DB" "$DEST_DB.backup"
