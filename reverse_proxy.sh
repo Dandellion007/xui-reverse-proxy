@@ -11,8 +11,8 @@ LANG_FILE="/usr/local/reverse_proxy/lang.conf"
 DEFAULT_FLAGS="/usr/local/reverse_proxy/default.conf"
 DEST_DB="/etc/x-ui/x-ui.db"
 
-SCRIPT_URL="https://raw.githubusercontent.com/cortez24rus/xui-reverse-proxy/refs/heads/main/reverse_proxy.sh"
-DB_SCRIPT_URL="https://raw.githubusercontent.com/cortez24rus/xui-reverse-proxy/refs/heads/main/database/x-ui.db"
+SCRIPT_URL="https://raw.githubusercontent.com/Dandellion007/xui-reverse-proxy/refs/heads/main/reverse_proxy.sh"
+DB_SCRIPT_URL="https://raw.githubusercontent.com/Dandellion007/xui-reverse-proxy/refs/heads/main/database/x-ui.db"
 
 ###################################
 ### Initialization and Declarations
